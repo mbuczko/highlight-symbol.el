@@ -4,6 +4,7 @@
 ;;
 ;; Author: Nikolaj Schumacher <bugs * nschum de>
 ;; Version: 1.3
+;; Package-Version: 20160102.1209
 ;; Keywords: faces, matching
 ;; URL: http://nschum.de/src/emacs/highlight-symbol/
 ;; Compatibility: GNU Emacs 23.x, GNU Emacs 24.x, GNU Emacs 25.x
@@ -276,12 +277,20 @@ element in of `highlight-symbol-faces'."
     (font-lock-add-keywords nil (list keywords) 'append)
     (highlight-symbol-flush)))
 
-(defun highlight-symbol-remove-symbol (symbol)
-  (let ((keywords (assoc symbol highlight-symbol-keyword-alist)))
-    (setq highlight-symbol-keyword-alist
-          (delq keywords highlight-symbol-keyword-alist))
-    (font-lock-remove-keywords nil (list keywords))
-    (highlight-symbol-flush)))
+(defun highlight-symbol-add-symbol-with-face (symbol face)
+  (let ((eod (save-excursion (progn (end-of-defun) (point)))))
+    (save-excursion
+      (beginning-of-defun)
+      (while (re-search-forward symbol eod t)
+        (let ((ov (make-overlay (match-beginning 0)
+                                (match-end 0))))
+          (overlay-put ov 'highlight-symbol t)
+          (overlay-put ov 'face face))))))
+
+(defun highlight-symbol-remove-symbol (_symbol)
+      (dolist (ov (overlays-in (point-min) (point-max)))
+        (when (overlay-get ov 'highlight-symbol)
+          (delete-overlay ov))))
 
 ;;;###autoload
 (defun highlight-symbol-remove-all ()
